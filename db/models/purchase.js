@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 
 const purchaseSchema = new mongoose.Schema({
-  courseId: mongoose.Schema.Types.ObjectId,
-  userId: mongoose.Schema.Types.ObjectId,
+  courseId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId,
 });
 
 const purchaseModel = mongoose.model("purchase", purchaseSchema);

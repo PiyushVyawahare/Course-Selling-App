@@ -1,4 +1,5 @@
 const { Router } = require("express");
+const { userModel } = require("../db/models/user");
 
 const userRouter = Router();
 
@@ -17,6 +18,6 @@ userRouter.get("/purchases", async (req, res) => {
   res.status(200).end();
 });
 
-userRouter.module.exports = {
+module.exports = {
   userRouter: userRouter,
 };

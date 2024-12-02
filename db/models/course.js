@@ -11,7 +11,7 @@ const courseSchema = new mongoose.Schema({
     require: true,
   },
   imageUrl: String,
-  creatorId: mongoose.Schema.Types.ObjectId,
+  creatorId: mongoose.Types.ObjectId,
 });
 
 const courseModel = mongoose.model("course", courseSchema);
