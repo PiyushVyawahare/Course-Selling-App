@@ -3,6 +3,8 @@ const { adminModel } = require("../db/models/admin");
 const zod = require("zod");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { adminMiddleware } = require("../middleware/admin");
+const { courseModel } = require("../db/models/course");
 
 const adminRouter = Router();
 
@@ -66,7 +68,7 @@ adminRouter.post("/signin", async (req, res) => {
       lastName: adminDetails.lastName,
     };
 
-    const token = jwt.sign(jwtPayload, "1234", { expiresIn: "10m" });
+    const token = jwt.sign(jwtPayload, process.env.JWT_ADMIN_KEY, { expiresIn: "10m" });
 
     return res.status(200).json({ token: token });
   } catch (e) {
@@ -75,14 +77,29 @@ adminRouter.post("/signin", async (req, res) => {
   }
 });
 
-adminRouter.get("/course/bulk", async (req, res) => {
-  console.log("In purchases");
-  res.status(200).end();
-});
+adminRouter.get("/course/bulk", async (req, res) => {});
 
-adminRouter.post("/course", async (req, res) => {
-  console.log("In purchases");
-  res.status(200).end();
+adminRouter.post("/course", adminMiddleware, async (req, res) => {
+  try {
+    const data = req.body;
+    const { title, description, price, imageUrl } = data;
+    // do zod validations
+    const User = zod.object({
+      title: zod.string().min(5),
+      price: zod.number().min(0),
+    });
+
+    User.parse(data);
+
+    const savedData = await courseModel.create({ title, description, price, imageUrl, creatorId: req.userId });
+
+    if (!savedData._id) return res.status(400).end();
+
+    return res.status(201).json({ message: "Course added successfully!!!" });
+  } catch (e) {
+    if (e.name === "ZodError") return res.status(400).send({ error: "Input validation error" });
+    return res.status(400).send({ error: e.message });
+  }
 });
 
 adminRouter.put("/course", async (req, res) => {
