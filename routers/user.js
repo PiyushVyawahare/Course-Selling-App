@@ -1,8 +1,10 @@
 const { Router } = require("express");
 const { userModel } = require("../db/models/user");
+const { userMiddleware } = require("../middleware/user");
 const zod = require("zod");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const { purchaseModel } = require("../db/models/purchase");
 
 const userRouter = Router();
 
@@ -66,7 +68,7 @@ userRouter.post("/signin", async (req, res) => {
       lastName: userDetails.lastName,
     };
 
-    const token = jwt.sign(jwtPayload, "1234", { expiresIn: "10m" });
+    const token = jwt.sign(jwtPayload, process.env.JWT_USER_KEY, { expiresIn: "10m" });
 
     return res.status(200).json({ token: token });
   } catch (e) {
@@ -75,9 +77,16 @@ userRouter.post("/signin", async (req, res) => {
   }
 });
 
-userRouter.get("/purchases", async (req, res) => {
-  console.log("In purchases");
-  res.status(200).end();
+userRouter.get("/purchases", userMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const purchses = await purchaseModel.find({ userId }).populate("courseId");
+
+    return res.status(200).json({ purchses });
+  } catch (e) {
+    return res.status(400).send({ error: e.meesage });
+  }
 });
 
 module.exports = {

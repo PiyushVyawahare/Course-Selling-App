@@ -13,7 +13,6 @@ const adminMiddleware = (req, res, next) => {
   }
 
   const payload = jwt.verify(token, process.env.JWT_ADMIN_KEY);
-  console.log(payload);
 
   if (payload) {
     req.userId = payload._id;
