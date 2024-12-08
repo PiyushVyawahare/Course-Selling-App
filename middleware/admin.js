@@ -6,12 +6,19 @@ const adminMiddleware = (req, res, next) => {
 
   if (!token) return res.status(401).send({ error: "User not authorized" });
 
+  const { exp } = jwt.decode(token);
+
+  if (Date.now() >= exp * 1000) {
+    return res.status(401).send({ error: "User token expired!" });
+  }
+
   const payload = jwt.verify(token, process.env.JWT_ADMIN_KEY);
+  console.log(payload);
 
   if (payload) {
     req.userId = payload._id;
     next();
-  } else return res.status(401).send({ error: "User not authorized" });
+  } else return res.status(401).send({ error: "User not authorized!" });
 };
 
 module.exports = {

@@ -1,9 +1,9 @@
 const { Router } = require("express");
-const { adminModel } = require("../db/models/admin");
 const zod = require("zod");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { adminMiddleware } = require("../middleware/admin");
+const { adminModel } = require("../db/models/admin");
 const { courseModel } = require("../db/models/course");
 
 const adminRouter = Router();
@@ -77,19 +77,32 @@ adminRouter.post("/signin", async (req, res) => {
   }
 });
 
-adminRouter.get("/course/bulk", async (req, res) => {});
+adminRouter.get("/course/bulk", adminMiddleware, async (req, res) => {
+  try {
+    const adminId = req.userId;
+
+    const courses = await courseModel.find({ creatorId: adminId });
+
+    if (!courses.length) return res.status(400).end();
+
+    return res.status(200).json(courses);
+  } catch (e) {
+    if (e.name === "ZodError") return res.status(400).send({ error: "Input validation error" });
+    return res.status(400).send({ error: e.message });
+  }
+});
 
 adminRouter.post("/course", adminMiddleware, async (req, res) => {
   try {
     const data = req.body;
     const { title, description, price, imageUrl } = data;
     // do zod validations
-    const User = zod.object({
+    const Course = zod.object({
       title: zod.string().min(5),
       price: zod.number().min(0),
     });
 
-    User.parse(data);
+    Course.parse(data);
 
     const savedData = await courseModel.create({ title, description, price, imageUrl, creatorId: req.userId });
 
@@ -102,9 +115,26 @@ adminRouter.post("/course", adminMiddleware, async (req, res) => {
   }
 });
 
-adminRouter.put("/course", async (req, res) => {
-  console.log("In purchases");
-  res.status(200).end();
+adminRouter.put("/course/:id", adminMiddleware, async (req, res) => {
+  try {
+    const data = req.body;
+    const { id } = req.params;
+
+    const adminId = req.userId;
+
+    const course = await courseModel.findOne({ _id: id, creatorId: adminId });
+
+    if (!course) throw new Error("You can not modify this course.");
+
+    const savedData = await courseModel.findOneAndUpdate({ _id: id, creatorId: adminId }, data);
+
+    if (!savedData._id) return res.status(400).end();
+
+    return res.status(200).json({ message: "Course updated successfully!!!" });
+  } catch (e) {
+    if (e.name === "ZodError") return res.status(400).send({ error: "Input validation error" });
+    return res.status(400).send({ error: e.message });
+  }
 });
 
 module.exports = {
